@@ -7,9 +7,7 @@ export const createUser: RequestHandler = async (req, res, next) => {
   try {
     const { username, password }: IUser = req.body;
     await _createUser({ username, password });
-    return res
-      .status(HttpStatusCode.CREATED)
-      .json({ message: `Created new user ${username} successfully!` });
+    return res.status(HttpStatusCode.CREATED).json({ message: `Created new user ${username} successfully!` });
   } catch (err) {
     return next(err);
   }

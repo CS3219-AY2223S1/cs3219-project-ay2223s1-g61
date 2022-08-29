@@ -11,10 +11,7 @@ export interface IUser {
 }
 // Put all user instance methods in this interface:
 export interface IUserMethods {
-  correctPassword(
-    candidatePassword: string,
-    userPassword: string
-  ): Promise<boolean>;
+  correctPassword(candidatePassword: string, userPassword: string): Promise<boolean>;
 }
 // Create a new Model type that knows about IUserMethods...
 type UserModel = Model<IUser, {}, IUserMethods>;
@@ -27,10 +24,7 @@ let UserModelSchema = new Schema<IUser, UserModel, IUserMethods>({
     immutable: true,
     lowercase: true,
     trim: true,
-    validate: [
-      validator.isAlphanumeric,
-      'Usernames may only have letters and numbers!',
-    ],
+    validate: [validator.isAlphanumeric, 'Usernames may only have letters and numbers!'],
   },
   password: {
     type: String,
@@ -52,10 +46,7 @@ UserModelSchema.pre('save', async function (this: IUser, next) {
 });
 
 //check password at login
-UserModelSchema.methods.correctPassword = async (
-  candidatePassword,
-  userPassword
-) => {
+UserModelSchema.methods.correctPassword = async (candidatePassword, userPassword) => {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 

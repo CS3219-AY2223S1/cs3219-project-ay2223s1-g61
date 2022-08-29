@@ -9,16 +9,12 @@ const handleValidationError = (err: Error.ValidationError, res: Response) => {
   const fields = Object.values(err.errors).map((el) => el.path);
 
   console.log('ERROR - Validation: ', err);
-  res
-    .status(HttpStatusCode.BAD_REQUEST)
-    .send({ messages: errors, fields: fields });
+  res.status(HttpStatusCode.BAD_REQUEST).send({ messages: errors, fields: fields });
 };
 
 //handle errors thrown by mongoose validators
 const handleAppError = (err: AppError, res: Response) => {
-  res
-    .status(HttpStatusCode.INTERNAL_SERVER_ERROR)
-    .send({ messages: err.message });
+  res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).send({ messages: err.message });
 };
 
 //error controller function
@@ -31,9 +27,7 @@ const errorController: ErrorRequestHandler = (err, req, res, next) => {
     }
     return next();
   } catch (err) {
-    res
-      .status(HttpStatusCode.INTERNAL_SERVER_ERROR)
-      .send('An unknown error occured.');
+    res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).send('An unknown error occured.');
   }
 };
 
