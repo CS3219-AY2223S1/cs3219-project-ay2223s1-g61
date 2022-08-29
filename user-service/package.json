@@ -2,12 +2,12 @@
   "name": "user-service",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "type": "module",
+  "main": "index.ts",
   "scripts": {
-    "dev": "nodemon index.js",
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "./node_modules/.bin/tsc -w",
+    "dev": "./node_modules/.bin/nodemon dist/user-service/index.js"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +31,8 @@
     "express": "^4.18.1",
     "mongoose": "^6.4.5",
     "mongoose-unique-validator": "^3.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.2",
     "validator": "^13.7.0"
   }
 }
