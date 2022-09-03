@@ -56,3 +56,5 @@ node_modules/
 build/
 
 dump.rdb
+
+*.icloud
