@@ -54,3 +54,5 @@ node_modules/
 
 # Compiled binary addons
 build/
+
+dump.rdb
