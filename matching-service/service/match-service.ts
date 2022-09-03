@@ -40,9 +40,9 @@ export const findMatch = async (username: string, difficulty: QuestionDifficulty
     const key = difficulty.toString();
     const pool = await getFromRedis(key);
     const possibleMatches = Object.entries(pool);
-    for (const possibleUser in possibleMatches) {
-      if (possibleUser === username) continue;
-      return { user: pool[possibleUser], errMsg: null };
+    for (const [possibleUsername, data] of possibleMatches) {
+      if (possibleUsername === username) continue;
+      return { user: data, errMsg: null };
     }
     return { user: null, errMsg: null };
   } catch {
