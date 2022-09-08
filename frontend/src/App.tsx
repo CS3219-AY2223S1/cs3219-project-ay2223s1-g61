@@ -3,10 +3,11 @@ import SignupPage from './components/SignupPage';
 import { UserContext } from './hooks/UserContext';
 import { RequireAuth, RoutePath } from './services/RoutingService';
 import useTokenLogin from './hooks/useTokenLogin';
-import NavBar from './components/NavBar';
 import AccountPage from './pages/AccountPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import HomePage from './pages/Home';
+import InterviewPage from './pages/InterviewPage';
 
 const theme = createTheme({
   palette: {
@@ -14,6 +15,11 @@ const theme = createTheme({
       light: '#474DD9',
       main: '#474DD9',
       dark: '#4347cb',
+    },
+    secondary: {
+      light: '#fff',
+      main: '#fff',
+      dark: '#fff',
     },
   },
 });
@@ -35,7 +41,15 @@ function App() {
                 path={RoutePath.HOME}
                 element={
                   <RequireAuth>
-                    <div>Home</div>
+                    <HomePage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path={RoutePath.INTERVIEW}
+                element={
+                  <RequireAuth>
+                    <InterviewPage />
                   </RequireAuth>
                 }
               />

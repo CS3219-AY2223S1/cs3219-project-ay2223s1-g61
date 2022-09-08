@@ -9,6 +9,7 @@ export enum RoutePath {
   LOGIN = '/login',
   HOME = '/home',
   ACCOUNT = '/:username',
+  INTERVIEW = '/interview/:id',
 }
 
 export const PrivateRoute = (props: PathRouteProps) => {
