@@ -3,7 +3,7 @@ import SignupPage from './components/SignupPage';
 import { UserContext } from './hooks/UserContext';
 import { RequireAuth, RoutePath } from './services/RoutingService';
 import useTokenLogin from './hooks/useTokenLogin';
-import AccountPage from './pages/AccountPage';
+import AccountPage from './pages/Account/Account';
 import NotFoundPage from './pages/NotFoundPage';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import HomePage from './pages/Home';
@@ -31,9 +31,7 @@ function App() {
       <UserContext.Provider value={{ user, setUser, isLoading }}>
         <ThemeProvider theme={theme}>
           <Router>
-            {/* <NavBar /> */}
             <Routes>
-              <Route path="*" element={<NotFoundPage />} />
               <Route path={RoutePath.BASE} element={<Navigate replace to={RoutePath.SIGNUP} />} />
               <Route path={RoutePath.SIGNUP} element={<SignupPage />} />
               <Route path={RoutePath.ACCOUNT} element={<AccountPage />} />
@@ -53,6 +51,7 @@ function App() {
                   </RequireAuth>
                 }
               />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Router>
         </ThemeProvider>
