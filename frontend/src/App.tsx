@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import SignupPage from './components/SignupPage';
 import { UserContext } from './hooks/UserContext';
 import { RequireAuth, RoutePath } from './services/RoutingService';
@@ -32,8 +32,7 @@ function App() {
         <ThemeProvider theme={theme}>
           <Router>
             <Routes>
-              <Route path={RoutePath.BASE} element={<Navigate replace to={RoutePath.SIGNUP} />} />
-              <Route path={RoutePath.SIGNUP} element={<SignupPage />} />
+              <Route path={RoutePath.BASE} element={<SignupPage />} />
               <Route path={RoutePath.ACCOUNT} element={<AccountPage />} />
               <Route
                 path={RoutePath.HOME}
