@@ -16,7 +16,7 @@ import {
 import { AxiosError } from 'axios';
 import { isNil, isEmpty } from 'lodash';
 import { useContext, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import Footer from 'src/components/Footer';
 import Header from 'src/components/Header';
 import { STATUS_CODE_NOT_FOUND, STATUS_CODE_OK } from 'src/constants';
@@ -25,7 +25,6 @@ import useLogout from 'src/hooks/useLogout';
 import { UserContext } from 'src/hooks/UserContext';
 import { editCurrentUser, userDelete, viewUserPublicInfo } from 'src/services/UserService';
 import { IUserInfo } from '../../../../common/Models';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import './index.scss';
 
 interface TabPanelProps {
@@ -88,7 +87,6 @@ export default function Account() {
   const [text, setText] = useState('');
   const [isError, setIsError] = useState(false);
   const { values, handleChange, clearForm } = useForm<typeof defaultForm>(defaultForm);
-  const navigate = useNavigate();
   const [snackOpen, setSnackOpen] = useState(false);
 
   useEffect(() => {
@@ -200,7 +198,6 @@ export default function Account() {
       <div className="account">
         <div>
           <Header />
-          <ArrowBackIcon color="secondary" fontSize="large" style={{ cursor: 'pointer' }} onClick={() => navigate(-1)} />
           <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <Box sx={{ width: '600px' }}>
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

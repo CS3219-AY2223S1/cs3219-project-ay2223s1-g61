@@ -51,48 +51,60 @@ const Header = () => {
       },
     },
     {
+      name: 'Home',
+      onClick: () => {
+        navigate('/home');
+        handleCloseUserMenu();
+      },
+    },
+    {
       name: 'Logout',
       onClick: handleLogout,
     },
   ];
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%', padding: '40px 80px' }}>
       <img
         src={Logo}
         alt="Logo"
-        style={{ height: '40px', marginBottom: '30px', marginTop: '20px', cursor: 'pointer' }}
-        onClick={() => navigate(RoutePath.HOME)}
+        style={{ height: '40px', marginBottom: '30px', marginTop: '20px', cursor: user ? 'pointer' : 'default' }}
+        onClick={() => {
+          if (!user) return;
+          navigate(RoutePath.HOME);
+        }}
       />
-      <Box sx={{ flexGrow: 0 }}>
-        <Tooltip title="Open settings">
-          <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-            <Avatar alt={user?.username} src="/static/images/avatar/2.jpg" sx={{ bgcolor: '#474DD9' }} />
-          </IconButton>
-        </Tooltip>
-        <Menu
-          sx={{ mt: '45px' }}
-          id="menu-appbar"
-          anchorEl={anchorElUser}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          open={Boolean(anchorElUser)}
-          onClose={handleCloseUserMenu}
-        >
-          {settings.map(({ name, onClick }) => (
-            <MenuItem key={name} onClick={onClick}>
-              <Typography textAlign="center">{name}</Typography>
-            </MenuItem>
-          ))}
-        </Menu>
-      </Box>
+      {user && (
+        <Box sx={{ flexGrow: 0 }}>
+          <Tooltip title="Open settings">
+            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+              <Avatar alt={user?.username} src="/static/images/avatar/2.jpg" sx={{ bgcolor: '#474DD9' }} />
+            </IconButton>
+          </Tooltip>
+          <Menu
+            sx={{ mt: '45px' }}
+            id="menu-appbar"
+            anchorEl={anchorElUser}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            open={Boolean(anchorElUser)}
+            onClose={handleCloseUserMenu}
+          >
+            {settings.map(({ name, onClick }) => (
+              <MenuItem key={name} onClick={onClick}>
+                <Typography textAlign="center">{name}</Typography>
+              </MenuItem>
+            ))}
+          </Menu>
+        </Box>
+      )}
     </div>
   );
 };
