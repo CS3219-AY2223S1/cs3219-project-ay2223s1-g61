@@ -24,8 +24,9 @@ export default function CollabPage(props: CollabPageProps) {
     socket.on('roomUsersChangeEvent', handleRoomUsersChange);
 
     return () => {
-      socket.off('remoteTextChangeEvent', handleRemoteTextChange);
+      newSocketocket.off('remoteTextChangeEvent', handleRemoteTextChange);
       socket.off('roomUsersChangeEvent', handleRoomUsersChange);
+      newSocket.close();
     };
   }, [socket]);
 
@@ -44,6 +45,14 @@ export default function CollabPage(props: CollabPageProps) {
     if (text !== data) {
       setText(data);
     }
+  };
+
+  const handleDisconnect = () => {
+    console.log('called handleDisconnect', socket);
+    if (socket) {
+      socket.emit('exitRoomEvent', props.sessionId, props.username);
+    }
+    navigate(RoutePath.HOME);
   };
 
   const handleTextChange = async (data: string) => {

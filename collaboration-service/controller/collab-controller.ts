@@ -46,6 +46,7 @@ export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: 
 };
 
 export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
+  console.log('called exitRoomEvent');
   const { errMsg, data } = await exitRoom(roomId, username);
   if (!data) {
     io.to(socket.id).emit('errorEvent', errMsg);

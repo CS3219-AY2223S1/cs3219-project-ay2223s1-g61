@@ -6,6 +6,7 @@ import { MatchClientToServerEvents, MatchInterServerEvents, MatchServerToClientE
 import { createMatch, createRoom, deleteMatch, findMatch } from '../service/match-service';
 import sleep from '../../common/utils/sleep';
 import { uuid } from 'uuidv4';
+import { HttpStatusCode } from '../../common/HttpStatusCodes';
 
 type IOType = Server<MatchClientToServerEvents, MatchServerToClientEvents, MatchInterServerEvents, MatchSocketData>;
 
@@ -67,4 +68,18 @@ export const deleteEvent = (io: IOType) => async (username: string, difficulty: 
     io.to(roomID).emit('errorEvent');
     return;
   }
+};
+
+// to do: refactor to another file and add types
+import axios from 'axios';
+
+const URI_COLLAB_SVC = process.env.URI_COLLAB_SVC || 'http://localhost:8002';
+
+export const createCollabRoom = (roomId: string, users: string[]) => {
+  console.log(`request create room ${roomId}`);
+  console.log(users);
+  return axios.post(URI_COLLAB_SVC + '/createRoom', {
+    roomId,
+    users,
+  });
 };

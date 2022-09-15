@@ -42,5 +42,9 @@ io.on('connection', (socket) => {
 
   socket.on('exitRoomEvent', exitRoomEvent(io, socket));
 
+  socket.on('disconnect', () => {
+    console.log('disconnected', socket.id);
+  });
+
   socket.on('textChangeEvent', textChangeEvent(io));
 });
