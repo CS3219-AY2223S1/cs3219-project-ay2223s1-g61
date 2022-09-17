@@ -1,5 +1,7 @@
 import RedisClient from '../db';
 import { TRoomData, TUserData } from '../../common/collaboration-service/socket-io-types';
+import QuestionDifficulty from '../../common/QuestionDifficulty';
+import { getRoomQuestion } from './question-service';
 
 const getFromRedis = async (key: string): Promise<TRoomData | null> => {
   const data = await RedisClient.get(key);
@@ -25,15 +27,18 @@ export const fetchRoom = async (roomId: string) => {
   }
 };
 
-export const createRoom = async (roomId: string, usernames: string[]) => {
+export const createRoom = async (roomId: string, usernames: string[], difficulty: QuestionDifficulty) => {
   try {
     const existingRoom = await getFromRedis(roomId);
     if (existingRoom) {
       return { errMsg: `Room ${roomId} already exists` };
     }
+
+    const { data } = await getRoomQuestion(difficulty);
     const room: TRoomData = {
       users: usernames.map((u) => createRoomUser(u)),
       text: '',
+      data: data.data,
     };
     await RedisClient.set(roomId, JSON.stringify(room));
 

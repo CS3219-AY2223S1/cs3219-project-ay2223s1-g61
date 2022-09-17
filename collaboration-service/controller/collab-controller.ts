@@ -14,7 +14,7 @@ type IOType = Server<CollabClientToServerEvents, CollabServerToClientEvents, Col
 type SocketType = Socket<CollabClientToServerEvents, CollabServerToClientEvents, CollabInterServerEvents, CollabSocketData>;
 
 export const createRoomRequest: RequestHandler = async (req, res) => {
-  const { data } = await createRoom(req.body.roomId, req.body.users);
+  const { data } = await createRoom(req.body.roomId, req.body.users, req.body.difficulty);
   if (data) {
     res.status(HttpStatusCode.OK).send(data);
   } else {
@@ -28,8 +28,10 @@ export const fetchRoomEvent = (io: IOType, socket: SocketType) => async (roomId:
     io.to(socket.id).emit('errorEvent', errMsg);
     return;
   }
+
   io.to(roomId).emit('roomUsersChangeEvent', data.users);
   io.to(roomId).emit('remoteTextChangeEvent', data.text);
+  io.to(roomId).emit('roomQuestionEvent', data.data);
 };
 
 export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
@@ -58,13 +60,39 @@ export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: 
   await handleRoomDelete(roomId);
 };
 
+// think we can delete this? @lingshan
 export const textChangeEvent = (io: IOType) => async (roomId: string, text: string) => {
   const { errMsg } = await changeRoomText(roomId, text);
   if (errMsg) {
     return;
   }
+};
 
-  io.to(roomId).emit('remoteTextChangeEvent', text);
+// we dont nid to wait as we want instant. I think we can afford to give up some correctness in terms of the code save for speed
+export const codeInsertEvent = (socket: SocketType) => (roomId: string, index: number, text: string) => {
+  socket.to(roomId).emit('codeInsertEvent', roomId, index, text);
+};
+
+export const codeReplaceEvent = (socket: SocketType) => (roomId: string, index: number, length: number, text: string) => {
+  socket.to(roomId).emit('codeReplaceEvent', roomId, index, length, text);
+};
+
+export const codeDeleteEvent = (socket: SocketType) => (roomId: string, index: number, length: number) => {
+  socket.to(roomId).emit('codeDeleteEvent', roomId, index, length);
+};
+
+// we can afford to wait since we want to do a full sync into the db as well
+export const codeSyncEvent = (socket: SocketType) => async (roomId: string, code: string) => {
+  const { errMsg } = await changeRoomText(roomId, code);
+  if (errMsg) {
+    console.log(`error change text of room ${roomId}`);
+    return;
+  }
+  socket.to(roomId).emit('codeSyncEvent', roomId, code);
+};
+
+export const cursorChangeEvent = (socket: SocketType) => (roomId: string, userId: string, cursor: any, from: any, to: any) => {
+  socket.to(roomId).emit('cursorChangeEvent', roomId, userId, cursor, from, to);
 };
 
 // Delete room when users are disconnected after a period of time

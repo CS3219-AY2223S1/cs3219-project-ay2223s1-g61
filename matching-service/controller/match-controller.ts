@@ -5,7 +5,7 @@ import QuestionDifficulty from '../../common/QuestionDifficulty';
 import { MatchClientToServerEvents, MatchInterServerEvents, MatchServerToClientEvents, MatchSocketData } from '../../socket-io-types/types';
 import { createMatch, createRoom, deleteMatch, findMatch } from '../service/match-service';
 import sleep from '../../common/utils/sleep';
-import { uuid } from 'uuidv4';
+import { v4 } from 'uuid';
 import { HttpStatusCode } from '../../common/HttpStatusCodes';
 
 type IOType = Server<MatchClientToServerEvents, MatchServerToClientEvents, MatchInterServerEvents, MatchSocketData>;
@@ -30,11 +30,11 @@ export const matchEvent = (io: IOType) => async (username: string, difficulty: Q
     if (user) {
       await sleep(1000); // this is so that it wont instantly match to at least show some animation lol
       found = true;
-      const sessionID = uuid();
+      const sessionID = v4();
 
       // this is so that only one client will trigger a room create
       if (username > user.username) {
-        const { errMsg } = await createRoom(sessionID, [username, user.username]);
+        const { errMsg } = await createRoom(sessionID, [username, user.username], difficulty);
         if (!errMsg) {
           io.to(roomID).emit('matchSuccessEvent', sessionID);
           await deleteMatch(username, difficulty);
@@ -70,16 +70,6 @@ export const deleteEvent = (io: IOType) => async (username: string, difficulty: 
   }
 };
 
-// to do: refactor to another file and add types
-import axios from 'axios';
-
-const URI_COLLAB_SVC = process.env.URI_COLLAB_SVC || 'http://localhost:8002';
-
-export const createCollabRoom = (roomId: string, users: string[]) => {
-  console.log(`request create room ${roomId}`);
-  console.log(users);
-  return axios.post(URI_COLLAB_SVC + '/createRoom', {
-    roomId,
-    users,
-  });
+export const removeEvent = async (username: string, difficulty: QuestionDifficulty) => {
+  await deleteMatch(username, difficulty);
 };
