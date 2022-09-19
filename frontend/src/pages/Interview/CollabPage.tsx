@@ -68,9 +68,11 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     setCodeSocket(socket);
     socket.on('connect', () => {
       socket.emit('joinRoomEvent', roomId, username);
-      socket.emit('fetchRoomEvent', roomId);
+
+      socket.on('joinRoomSuccess', () => socket.emit('fetchRoomEvent', roomId));
 
       socket.on('roomUsersChangeEvent', (users: TUserData[]) => {
+        console.log('roomUsersChangeEvent');
         setRoomUsers(users);
         const otherLabel = users.filter((user) => user.username !== username)[0].username;
         setOtherLabel(otherLabel);

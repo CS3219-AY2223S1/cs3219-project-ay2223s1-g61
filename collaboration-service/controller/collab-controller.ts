@@ -29,9 +29,9 @@ export const fetchRoomEvent = (io: IOType, socket: SocketType) => async (roomId:
     return;
   }
 
-  io.to(roomId).emit('roomUsersChangeEvent', data.users);
-  io.to(roomId).emit('remoteTextChangeEvent', data.text);
-  io.to(roomId).emit('roomQuestionEvent', data.data);
+  io.to(socket.id).emit('roomUsersChangeEvent', data.users);
+  io.to(socket.id).emit('remoteTextChangeEvent', data.text);
+  io.to(socket.id).emit('roomQuestionEvent', data.data);
 };
 
 export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
@@ -44,7 +44,6 @@ export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: 
 
   io.to(socket.id).emit('joinRoomSuccess');
   io.to(roomId).emit('roomUsersChangeEvent', data.users);
-  io.to(roomId).emit('remoteTextChangeEvent', data.text);
 };
 
 export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
