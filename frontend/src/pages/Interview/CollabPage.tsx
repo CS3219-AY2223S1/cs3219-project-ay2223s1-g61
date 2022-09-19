@@ -138,9 +138,18 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     const { cursor: partnerCursor, selection: partnerSelection } = getEditorUserConfig(partnerUser, otherLabel, cursorManager, selectionManager);
 
     // this is when we are moving the cursor
-    codeEditor.on('mousedown', () => throttle(() => (didUserMoveRef.current = true), 10));
-    codeEditor.on('keydown', () => throttle(() => (didUserMoveRef.current = true), 10));
-    codeEditor.on('beforeChange', () => throttle(() => (didUserMoveRef.current = false), 10));
+    codeEditor.on(
+      'mousedown',
+      throttle(() => (didUserMoveRef.current = true), 10)
+    );
+    codeEditor.on(
+      'keydown',
+      throttle(() => (didUserMoveRef.current = true), 10)
+    );
+    codeEditor.on(
+      'beforeChange',
+      throttle(() => (didUserMoveRef.current = false), 10)
+    );
 
     // this is when there is some cursor activity of the source user
     codeEditor.on('cursorActivity', () => {
