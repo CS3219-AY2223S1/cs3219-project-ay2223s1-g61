@@ -39,8 +39,6 @@ export const matchEvent = (io: IOType) => async (username: string, difficulty: Q
           io.to(roomID).emit('matchSuccessEvent', sessionID);
           await deleteMatch(username, difficulty);
 
-          await sleep(100); // temporary fix for race conditions
-
           io.to(user.roomID).emit('matchSuccessEvent', sessionID);
           await deleteMatch(user.username, difficulty);
         } else {
