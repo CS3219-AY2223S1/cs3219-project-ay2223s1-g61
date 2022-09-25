@@ -151,6 +151,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       throttle(() => (didUserMoveRef.current = false), 10)
     );
 
+    // Prevent backspace on empty editor to avoid error thrown from the EditorContentManager
     codeEditor.on('keydown', (cm, event) => {
       if (event.key == 'Backspace' && cm.getValue().length == 0) {
         event.preventDefault();
