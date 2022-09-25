@@ -151,6 +151,12 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       throttle(() => (didUserMoveRef.current = false), 10)
     );
 
+    codeEditor.on('keydown', (cm, event) => {
+      if (event.key == 'Backspace' && cm.getValue().length == 0) {
+        event.preventDefault();
+      }
+    });
+
     // this is when there is some cursor activity of the source user
     codeEditor.on('cursorActivity', () => {
       const cursor = codeEditor.getCursor();
