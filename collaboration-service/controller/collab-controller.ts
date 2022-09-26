@@ -1,4 +1,4 @@
-import { changeRoomText, exitRoom, joinRoom, deleteRoom, fetchRoom, createRoom } from '../service/collab-service';
+import { changeRoomText, exitRoom, joinRoom, deleteRoom, fetchRoom, createRoom, changeRoomLanguage } from '../service/collab-service';
 import type { Server, Socket } from 'socket.io';
 import {
   CollabClientToServerEvents,
@@ -22,7 +22,7 @@ export const createRoomRequest: RequestHandler = async (req, res) => {
   }
 };
 
-export const fetchRoomTextEvent = (io: IOType, socket: SocketType) => async (roomId: string) => {
+export const fetchRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string) => {
   const { errMsg, data } = await fetchRoom(roomId);
   if (!data) {
     io.to(socket.id).emit('errorEvent', errMsg);
@@ -30,6 +30,7 @@ export const fetchRoomTextEvent = (io: IOType, socket: SocketType) => async (roo
   }
 
   io.to(socket.id).emit('codeSyncEvent', roomId, data.text);
+  io.to(socket.id).emit('roomLanguageChangeEvent', roomId, data.language);
 };
 
 export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
@@ -82,6 +83,15 @@ export const codeSyncEvent = (socket: SocketType) => async (roomId: string, code
     return;
   }
   socket.to(roomId).emit('codeSyncEvent', roomId, code);
+};
+
+export const roomLanguageChangeEvent = (socket: SocketType) => async (roomId: string, language: string) => {
+  const { errMsg } = await changeRoomLanguage(roomId, language);
+  if (errMsg) {
+    console.log(`error change language of room ${roomId}`);
+    return;
+  }
+  socket.to(roomId).emit('roomLanguageChangeEvent', roomId, language);
 };
 
 export const cursorChangeEvent = (socket: SocketType) => (roomId: string, userId: string, cursor: any, from: any, to: any) => {

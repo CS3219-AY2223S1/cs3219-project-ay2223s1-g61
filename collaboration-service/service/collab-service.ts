@@ -39,6 +39,7 @@ export const createRoom = async (roomId: string, usernames: string[], difficulty
       users: usernames.map((u) => createRoomUser(u)),
       text: '',
       data: data.data,
+      language: 'JavaScript',
     };
     await RedisClient.set(roomId, JSON.stringify(room));
 
@@ -99,7 +100,25 @@ export const changeRoomText = async (roomId: string, text: string) => {
     await RedisClient.set(roomId, JSON.stringify(room));
     return { errMsg: null };
   } catch {
-    return { errMsg: 'Something went wrong with user joining room' };
+    return { errMsg: 'Something went wrong with change room text' };
+  }
+};
+
+export const changeRoomLanguage = async (roomId: string, language: string) => {
+  try {
+    const room = await getFromRedis(roomId);
+    if (!room) {
+      return { errMsg: `Room ${roomId} doesn't exists!` };
+    }
+    if (room.language === language) {
+      return { errMsg: null };
+    }
+    room.language = language;
+    await RedisClient.set(roomId, JSON.stringify(room));
+
+    return { errMsg: null };
+  } catch {
+    return { errMsg: 'Something went wrong with changing room language' };
   }
 };
 

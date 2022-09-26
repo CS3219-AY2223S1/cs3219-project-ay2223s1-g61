@@ -45,7 +45,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   const [otherLabel, setOtherLabel] = useState<string>();
   const didUserMoveRef = useRef(false);
   const [question, setQuestion] = useState<QuestionType>();
-  const [language, setLanguage] = useState('JavaScript');
+  const [language, setLanguage] = useState('');
 
   const getEditorUserConfig = (
     user: TCodeEditorUser,
@@ -59,6 +59,9 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   };
 
   const handleLanguageChange = (event: SelectChangeEvent) => {
+    if (language !== '') {
+      codeSocket?.emit('roomLanguageChangeEvent', roomId, event.target.value);
+    }
     setLanguage(event.target.value);
   };
 
@@ -114,9 +117,11 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       scrollbarStyle: 'native',
     });
 
+    if (!editor.current) {
+      // fetch code here on init when listeners codeSyncEvent & roomLanguageChangeEvent are registered
+      codeSocket.emit('fetchRoomEvent', roomId);
+    }
     editor.current = codeEditor;
-    // fetch code here when listener for codeSyncEvent is registered
-    codeSocket.emit('fetchRoomTextEvent', roomId);
 
     // do we still want this?
     // if (question && language) {
@@ -244,6 +249,12 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       console.log('codeSyncEvent', code);
       const length = codeEditor.getValue().length;
       contentManager.replace(0, length, code);
+    });
+
+    codeSocket.on('roomLanguageChangeEvent', (_roomId, newLanguage) => {
+      if (language !== newLanguage) {
+        setLanguage(newLanguage);
+      }
     });
 
     return () => {
