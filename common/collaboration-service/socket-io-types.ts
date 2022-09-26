@@ -15,7 +15,7 @@ export interface CollabClientToServerEvents {
 
 export interface CollabServerToClientEvents {
   joinRoomFailure: () => void;
-  joinRoomSuccess: () => void;
+  joinRoomSuccess: (username: string) => void;
   roomUsersChangeEvent: (users: TUserData[]) => void;
   errorEvent: (msg?: string) => void;
   cursorChangeEvent: (roomId: string, userId: string, cursor: any, from: any, to: any) => void;
