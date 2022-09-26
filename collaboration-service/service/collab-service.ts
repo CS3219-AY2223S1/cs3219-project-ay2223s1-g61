@@ -92,6 +92,9 @@ export const changeRoomText = async (roomId: string, text: string) => {
     if (!room) {
       return { errMsg: `Room ${roomId} doesn't exists!` };
     }
+    if (room.text === text) {
+      return { errMsg: null };
+    }
     room.text = text;
     await RedisClient.set(roomId, JSON.stringify(room));
     return { errMsg: null };

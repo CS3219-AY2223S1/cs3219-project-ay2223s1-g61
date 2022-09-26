@@ -9,10 +9,9 @@ import {
   CollabSocketData,
 } from '../common/collaboration-service/socket-io-types';
 import {
-  fetchRoomEvent,
+  fetchRoomTextEvent,
   exitRoomEvent,
   joinRoomEvent,
-  textChangeEvent,
   createRoomRequest,
   codeDeleteEvent,
   codeInsertEvent,
@@ -47,7 +46,7 @@ app.get('/', (req, res) => {
 app.post('/createRoom', createRoomRequest);
 
 io.on('connection', (socket) => {
-  socket.on('fetchRoomEvent', fetchRoomEvent(io, socket));
+  socket.on('fetchRoomTextEvent', fetchRoomTextEvent(io, socket));
 
   socket.on('joinRoomEvent', joinRoomEvent(io, socket));
 
@@ -62,6 +61,4 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('disconnected', socket.id);
   });
-
-  socket.on('textChangeEvent', textChangeEvent(io));
 });

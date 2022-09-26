@@ -1,13 +1,12 @@
 import { io, Socket } from 'socket.io-client';
 import { useEffect, useRef, useState } from 'react';
 import { CollabClientToServerEvents, CollabServerToClientEvents, QuestionType, TUserData } from 'src/types';
-// import { useNavigate } from 'react-router-dom';
-// import { RoutePath } from 'src/services/RoutingService';
+import { useNavigate } from 'react-router-dom';
+import { RoutePath } from 'src/services/RoutingService';
 import { COLORS, sourceUser, partnerUser, TCodeEditorUser } from './constants';
 import { getMode, languages, getSnippet } from './utils';
 import { throttle } from 'throttle-typescript';
 import parse from 'html-react-parser';
-
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -40,8 +39,9 @@ let errorInTransmit = false;
 
 export default function CollabPage({ roomId, username }: CollabPageProps) {
   const [roomUsers, setRoomUsers] = useState<TUserData[]>([]);
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const [codeSocket, setCodeSocket] = useState<TSocket>();
+  const editor = useRef<CodeMirror.Editor>();
   const [otherLabel, setOtherLabel] = useState<string>();
   const didUserMoveRef = useRef(false);
   const [question, setQuestion] = useState<QuestionType>();
@@ -64,12 +64,14 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
 
   // mounting of socket
   useEffect(() => {
-    const socket: TSocket = io('http://localhost:8002');
+    const socket: TSocket = io('http://localhost:8002', {
+      closeOnBeforeunload: false,
+    });
     setCodeSocket(socket);
     socket.on('connect', () => {
       socket.emit('joinRoomEvent', roomId, username);
 
-      socket.on('joinRoomSuccess', () => socket.emit('fetchRoomEvent', roomId));
+      socket.on('joinRoomFailure', () => handleDisconnect());
 
       socket.on('roomUsersChangeEvent', (users: TUserData[]) => {
         console.log('roomUsersChangeEvent');
@@ -81,10 +83,18 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       socket.on('roomQuestionEvent', (question) => setQuestion(question));
     });
 
-    return () => {
-      // will only come here if like user close the page i guess? :O should we allow them to come back
-      socket.emit('exitRoomEvent', roomId, username);
+    const handleExit = () => {
+      socket.emit('exitRoomEvent', roomId, username, editor.current?.getValue());
       socket.close();
+    };
+
+    // triggered on refresh
+    window.addEventListener('beforeunload', handleExit);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleExit);
+      // triggered when leaving page
+      handleExit();
     };
   }, [roomId, username]);
 
@@ -104,10 +114,15 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       scrollbarStyle: 'native',
     });
 
-    if (question && language) {
-      const snippet = getSnippet(question, language);
-      if (snippet) codeEditor.setValue(snippet.code);
-    }
+    editor.current = codeEditor;
+    // fetch code here when listener for codeSyncEvent is registered
+    codeSocket.emit('fetchRoomTextEvent', roomId);
+
+    // do we still want this?
+    // if (question && language) {
+    //   const snippet = getSnippet(question, language);
+    //   if (snippet) codeEditor.setValue(snippet.code);
+    // }
 
     // editor.setValue(... some initial code)
     const cursorManager = new CodeMirrorCollabExt.RemoteCursorManager({
@@ -153,7 +168,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
 
     // Prevent backspace on empty editor to avoid error thrown from the EditorContentManager
     codeEditor.on('keydown', (cm, event) => {
-      if (event.key == 'Backspace' && cm.getValue().length == 0) {
+      if (event.key === 'Backspace' && cm.getValue().length === 0) {
         event.preventDefault();
       }
     });
@@ -210,18 +225,25 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       }
     });
 
-    // this is a fallback extra method to send over incase transmit fail. Somehwo it does fail occasional when i am doing testing
-    codeEditor.on('change', (instance, { origin }) => {
-      if (origin !== 'setValue') {
-        codeSocket.emit('codeSyncEvent', roomId, instance.getValue());
+    codeSocket.on('joinRoomSuccess', (_username: string) => {
+      // sync code when new user join
+      if (_username !== username) {
+        codeSocket.emit('codeSyncEvent', roomId, codeEditor.getValue());
       }
     });
 
+    // this is a fallback extra method to send over incase transmit fail. Somehwo it does fail occasional when i am doing testing
+    // codeEditor.on('change', (instance, { origin }) => {
+    //   if (origin !== 'setValue') {
+    //     codeSocket.emit('codeSyncEvent', roomId, instance.getValue());
+    //   }
+    // });
+
+    // set value of codeEditor without triggering change
     codeSocket.on('codeSyncEvent', (_roomId, code) => {
-      if (errorInTransmit) {
-        codeEditor.setValue(code);
-        errorInTransmit = false;
-      }
+      console.log('codeSyncEvent', code);
+      const length = codeEditor.getValue().length;
+      contentManager.replace(0, length, code);
     });
 
     return () => {
@@ -231,11 +253,11 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       sourceSelection.dispose();
       contentManager.dispose();
     };
-  }, [codeSocket, roomId, roomUsers, username, otherLabel, language, question]);
+  }, [codeSocket, roomId, roomUsers, username, otherLabel, language]);
 
-  // const handleDisconnect = () => {
-  //   navigate(RoutePath.HOME);
-  // };
+  const handleDisconnect = () => {
+    navigate(RoutePath.HOME);
+  };
 
   return (
     <div className="coding">
@@ -273,7 +295,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
             })}
           </div>
           <div className="coding__controllers">
-            <Button variant="outlined" color="warning" onClick={() => {}}>
+            <Button variant="outlined" color="warning" onClick={handleDisconnect}>
               EXIT
             </Button>
             <Button variant="contained" onClick={() => {}}>

@@ -22,16 +22,14 @@ export const createRoomRequest: RequestHandler = async (req, res) => {
   }
 };
 
-export const fetchRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string) => {
+export const fetchRoomTextEvent = (io: IOType, socket: SocketType) => async (roomId: string) => {
   const { errMsg, data } = await fetchRoom(roomId);
   if (!data) {
     io.to(socket.id).emit('errorEvent', errMsg);
     return;
   }
 
-  io.to(socket.id).emit('roomUsersChangeEvent', data.users);
-  io.to(socket.id).emit('remoteTextChangeEvent', data.text);
-  io.to(socket.id).emit('roomQuestionEvent', data.data);
+  io.to(socket.id).emit('codeSyncEvent', roomId, data.text);
 };
 
 export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
@@ -42,29 +40,25 @@ export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: 
   }
   socket.join(roomId);
 
-  io.to(socket.id).emit('joinRoomSuccess');
+  io.to(roomId).emit('joinRoomSuccess', username);
   io.to(roomId).emit('roomUsersChangeEvent', data.users);
+  io.to(socket.id).emit('roomQuestionEvent', data.data);
 };
 
-export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
-  console.log('called exitRoomEvent');
+export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string, code?: string) => {
+  if (code) {
+    await codeSyncEvent(socket)(roomId, code);
+  }
   const { errMsg, data } = await exitRoom(roomId, username);
   if (!data) {
     io.to(socket.id).emit('errorEvent', errMsg);
     return;
   }
   socket.leave(roomId);
+  socket.disconnect();
   io.to(roomId).emit('roomUsersChangeEvent', data.users);
 
   await handleRoomDelete(roomId);
-};
-
-// think we can delete this? @lingshan
-export const textChangeEvent = (io: IOType) => async (roomId: string, text: string) => {
-  const { errMsg } = await changeRoomText(roomId, text);
-  if (errMsg) {
-    return;
-  }
 };
 
 // we dont nid to wait as we want instant. I think we can afford to give up some correctness in terms of the code save for speed
