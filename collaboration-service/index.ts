@@ -12,13 +12,13 @@ import {
   fetchRoomEvent,
   exitRoomEvent,
   joinRoomEvent,
-  textChangeEvent,
   createRoomRequest,
   codeDeleteEvent,
   codeInsertEvent,
   codeReplaceEvent,
   codeSyncEvent,
   cursorChangeEvent,
+  roomLanguageChangeEvent,
 } from './controller/collab-controller';
 
 const app = express();
@@ -58,10 +58,9 @@ io.on('connection', (socket) => {
   socket.on('codeDeleteEvent', codeDeleteEvent(socket));
   socket.on('codeSyncEvent', codeSyncEvent(socket));
   socket.on('cursorChangeEvent', cursorChangeEvent(socket));
+  socket.on('roomLanguageChangeEvent', roomLanguageChangeEvent(socket));
 
   socket.on('disconnect', () => {
     console.log('disconnected', socket.id);
   });
-
-  socket.on('textChangeEvent', textChangeEvent(io));
 });

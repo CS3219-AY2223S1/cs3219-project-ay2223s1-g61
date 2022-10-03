@@ -35,20 +35,19 @@ export interface MatchSocketData {}
 
 export interface CollabClientToServerEvents {
   joinRoomEvent: (roomId: string, username: string) => void;
-  exitRoomEvent: (roomId: string, username: string) => void;
-  textChangeEvent: (roomId: string, text: string) => void;
+  exitRoomEvent: (roomId: string, username: string, code?: string) => void;
   fetchRoomEvent: (roomId: string) => void;
   cursorChangeEvent: (roomId: string, userId: string, cursor: CodeMirror.Position, from: CodeMirror.Position, to: CodeMirror.Position) => void;
   codeInsertEvent: (roomId: string, index: number, text: string) => void;
   codeReplaceEvent: (roomId: string, index: number, length: number, text: string) => void;
   codeDeleteEvent: (roomId: string, index: number, length: number) => void;
   codeSyncEvent: (roomId: string, code: string) => void;
+  roomLanguageChangeEvent: (roomId: string, language: string) => void;
 }
 
 export interface CollabServerToClientEvents {
   joinRoomFailure: () => void;
-  joinRoomSuccess: () => void;
-  remoteTextChangeEvent: (text: string) => void;
+  joinRoomSuccess: (username: string) => void;
   roomUsersChangeEvent: (users: TUserData[]) => void;
   cursorChangeEvent: (roomId: string, userId: string, cursor: CodeMirror.Position, from: CodeMirror.Position, to: CodeMirror.Position) => void;
   codeInsertEvent: (roomId: string, index: number, text: string) => void;
@@ -56,6 +55,7 @@ export interface CollabServerToClientEvents {
   codeDeleteEvent: (roomId: string, index: number, length: number) => void;
   codeSyncEvent: (roomId: string, code: string) => void;
   roomQuestionEvent: (question: QuestionType) => void;
+  roomLanguageChangeEvent: (roomId: string, language: string) => void;
 }
 
 export interface CollabInterServerEvents {}

@@ -1,4 +1,4 @@
-import { changeRoomText, exitRoom, joinRoom, deleteRoom, fetchRoom, createRoom } from '../service/collab-service';
+import { changeRoomText, exitRoom, joinRoom, deleteRoom, fetchRoom, createRoom, changeRoomLanguage } from '../service/collab-service';
 import type { Server, Socket } from 'socket.io';
 import {
   CollabClientToServerEvents,
@@ -29,9 +29,8 @@ export const fetchRoomEvent = (io: IOType, socket: SocketType) => async (roomId:
     return;
   }
 
-  io.to(roomId).emit('roomUsersChangeEvent', data.users);
-  io.to(roomId).emit('remoteTextChangeEvent', data.text);
-  io.to(roomId).emit('roomQuestionEvent', data.data);
+  io.to(socket.id).emit('codeSyncEvent', roomId, data.text);
+  io.to(socket.id).emit('roomLanguageChangeEvent', roomId, data.language);
 };
 
 export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
@@ -42,30 +41,25 @@ export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: 
   }
   socket.join(roomId);
 
-  io.to(socket.id).emit('joinRoomSuccess');
+  io.to(roomId).emit('joinRoomSuccess', username);
   io.to(roomId).emit('roomUsersChangeEvent', data.users);
-  io.to(roomId).emit('remoteTextChangeEvent', data.text);
+  io.to(socket.id).emit('roomQuestionEvent', data.data);
 };
 
-export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
-  console.log('called exitRoomEvent');
+export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string, code?: string) => {
+  if (code) {
+    await codeSyncEvent(socket)(roomId, code);
+  }
   const { errMsg, data } = await exitRoom(roomId, username);
   if (!data) {
     io.to(socket.id).emit('errorEvent', errMsg);
     return;
   }
   socket.leave(roomId);
+  socket.disconnect();
   io.to(roomId).emit('roomUsersChangeEvent', data.users);
 
   await handleRoomDelete(roomId);
-};
-
-// think we can delete this? @lingshan
-export const textChangeEvent = (io: IOType) => async (roomId: string, text: string) => {
-  const { errMsg } = await changeRoomText(roomId, text);
-  if (errMsg) {
-    return;
-  }
 };
 
 // we dont nid to wait as we want instant. I think we can afford to give up some correctness in terms of the code save for speed
@@ -89,6 +83,15 @@ export const codeSyncEvent = (socket: SocketType) => async (roomId: string, code
     return;
   }
   socket.to(roomId).emit('codeSyncEvent', roomId, code);
+};
+
+export const roomLanguageChangeEvent = (socket: SocketType) => async (roomId: string, language: string) => {
+  const { errMsg } = await changeRoomLanguage(roomId, language);
+  if (errMsg) {
+    console.log(`error change language of room ${roomId}`);
+    return;
+  }
+  socket.to(roomId).emit('roomLanguageChangeEvent', roomId, language);
 };
 
 export const cursorChangeEvent = (socket: SocketType) => (roomId: string, userId: string, cursor: any, from: any, to: any) => {
