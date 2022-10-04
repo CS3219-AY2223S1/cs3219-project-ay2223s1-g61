@@ -54,6 +54,7 @@ export interface CollabServerToClientEvents {
   codeReplaceEvent: (roomId: string, index: number, length: number, text: string) => void;
   codeDeleteEvent: (roomId: string, index: number, length: number) => void;
   codeSyncEvent: (roomId: string, code: string) => void;
+  codeInitEvent: (code: string) => void;
   roomQuestionEvent: (question: QuestionType) => void;
   roomLanguageChangeEvent: (roomId: string, language: string) => void;
 }

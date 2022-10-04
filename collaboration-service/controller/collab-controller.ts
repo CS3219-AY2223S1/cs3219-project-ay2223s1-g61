@@ -23,27 +23,27 @@ export const createRoomRequest: RequestHandler = async (req, res) => {
 };
 
 export const fetchRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string) => {
-  const { errMsg, data } = await fetchRoom(roomId);
+  const { data } = await fetchRoom(roomId);
   if (!data) {
-    io.to(socket.id).emit('errorEvent', errMsg);
+    io.to(socket.id).emit('joinRoomFailure');
     return;
   }
+  socket.join(roomId); // we need this. Upon refresh, this socket might not be teh ame as the one in the joinRoom i think... LOL
 
-  io.to(socket.id).emit('codeSyncEvent', roomId, data.text);
-  io.to(socket.id).emit('roomLanguageChangeEvent', roomId, data.language);
+  io.to(roomId).emit('roomUsersChangeEvent', data.users);
+  io.to(roomId).emit('roomLanguageChangeEvent', roomId, data.language);
+  io.to(roomId).emit('roomQuestionEvent', data.data);
+  io.to(roomId).emit('codeInitEvent', data.text);
 };
 
 export const joinRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string) => {
   const { data } = await joinRoom(roomId, username);
   if (!data) {
-    io.to(socket.id).emit('joinRoomFailure');
     return;
   }
   socket.join(roomId);
 
   io.to(roomId).emit('joinRoomSuccess', username);
-  io.to(roomId).emit('roomUsersChangeEvent', data.users);
-  io.to(socket.id).emit('roomQuestionEvent', data.data);
 };
 
 export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: string, username: string, code?: string) => {

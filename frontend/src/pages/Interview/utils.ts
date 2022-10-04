@@ -1,7 +1,7 @@
 import { QuestionType } from 'src/types';
 
 export const getSnippet = (question: QuestionType, lang: string) => {
-  return question.codeSnippets.find((snippet) => snippet.lang === lang);
+  return question?.codeSnippets?.find((snippet) => snippet.lang === lang);
 };
 
 export const languages = ['C++', 'Java', 'JavaScript', 'Python', 'Python3', 'C', 'C#'];

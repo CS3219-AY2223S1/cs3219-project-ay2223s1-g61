@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CollabClientToServerEvents, CollabServerToClientEvents, QuestionType, TUserData } from 'src/types';
 import { useNavigate } from 'react-router-dom';
 import { RoutePath } from 'src/services/RoutingService';
@@ -35,8 +35,6 @@ type CollabPageProps = {
 
 type TSocket = Socket<CollabServerToClientEvents, CollabClientToServerEvents>;
 
-let errorInTransmit = false;
-
 export default function CollabPage({ roomId, username }: CollabPageProps) {
   const [roomUsers, setRoomUsers] = useState<TUserData[]>([]);
   const navigate = useNavigate();
@@ -46,15 +44,17 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   const didUserMoveRef = useRef(false);
   const [question, setQuestion] = useState<QuestionType>();
   const [language, setLanguage] = useState('');
+  const [initialCode, setInitialCode] = useState('');
 
   const getEditorUserConfig = (
     user: TCodeEditorUser,
     label: string,
     cursorManager: CodeMirrorCollabExt.RemoteCursorManager,
-    selectionManager: CodeMirrorCollabExt.RemoteSelectionManager
+    selectionManager: CodeMirrorCollabExt.RemoteSelectionManager,
+    color: string
   ) => {
-    const cursor = cursorManager.addCursor(user.id, user.color, label);
-    const selection = selectionManager.addSelection(user.id, user.color);
+    const cursor = cursorManager.addCursor(user.id, color, label);
+    const selection = selectionManager.addSelection(user.id, color);
     return { cursor, selection };
   };
 
@@ -65,28 +65,39 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     setLanguage(event.target.value);
   };
 
+  const handleDisconnect = useCallback(() => {
+    navigate(RoutePath.HOME);
+  }, [navigate]);
+
   // mounting of socket
   useEffect(() => {
     const socket: TSocket = io('http://localhost:8002', {
       closeOnBeforeunload: false,
     });
     setCodeSocket(socket);
+
     socket.on('connect', () => {
       socket.emit('joinRoomEvent', roomId, username);
-
-      socket.on('joinRoomFailure', () => handleDisconnect());
+      socket.emit('fetchRoomEvent', roomId);
+      socket.on('joinRoomFailure', handleDisconnect);
 
       socket.on('roomUsersChangeEvent', (users: TUserData[]) => {
-        console.log('roomUsersChangeEvent');
         setRoomUsers(users);
         const otherLabel = users.filter((user) => user.username !== username)[0].username;
         setOtherLabel(otherLabel);
       });
 
       socket.on('roomQuestionEvent', (question) => setQuestion(question));
+      socket.on('roomLanguageChangeEvent', (_roomId, newLanguage) => {
+        if (language !== newLanguage) {
+          setLanguage(newLanguage);
+        }
+      });
+      socket.on('codeInitEvent', (code) => setInitialCode(code));
     });
 
     const handleExit = () => {
+      // TODO: Link to History Service (BE) for storage
       socket.emit('exitRoomEvent', roomId, username, editor.current?.getValue());
       socket.close();
     };
@@ -99,7 +110,8 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       // triggered when leaving page
       handleExit();
     };
-  }, [roomId, username]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, username, handleDisconnect]);
 
   // mounting of editor
   useEffect(() => {
@@ -112,24 +124,14 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       lineNumbers: true,
       keyMap: 'sublime',
       theme: 'material-palenight',
-      mode: getMode(language) ?? 'javascript', // default
+      mode: getMode(language), // default
       lineWrapping: true,
       scrollbarStyle: 'native',
     });
 
-    if (!editor.current) {
-      // fetch code here on init when listeners codeSyncEvent & roomLanguageChangeEvent are registered
-      codeSocket.emit('fetchRoomEvent', roomId);
-    }
     editor.current = codeEditor;
+    codeEditor.setValue(initialCode || ((question && getSnippet(question, language)?.code) ?? ''));
 
-    // do we still want this?
-    // if (question && language) {
-    //   const snippet = getSnippet(question, language);
-    //   if (snippet) codeEditor.setValue(snippet.code);
-    // }
-
-    // editor.setValue(... some initial code)
     const cursorManager = new CodeMirrorCollabExt.RemoteCursorManager({
       // @ts-ignore This is likely to be a bug in the @types packages lol
       editor: codeEditor,
@@ -154,8 +156,22 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       },
     });
 
-    const { cursor: sourceCursor, selection: sourceSelection } = getEditorUserConfig(sourceUser, username, cursorManager, selectionManager);
-    const { cursor: partnerCursor, selection: partnerSelection } = getEditorUserConfig(partnerUser, otherLabel, cursorManager, selectionManager);
+    const usernameIdx = roomUsers.findIndex((roomUser) => roomUser.username === username);
+    const otherUserIdx = roomUsers.findIndex((roomUser) => roomUser.username === otherLabel);
+    const { cursor: sourceCursor, selection: sourceSelection } = getEditorUserConfig(
+      sourceUser,
+      username,
+      cursorManager,
+      selectionManager,
+      COLORS[usernameIdx]
+    );
+    const { cursor: partnerCursor, selection: partnerSelection } = getEditorUserConfig(
+      partnerUser,
+      otherLabel,
+      cursorManager,
+      selectionManager,
+      COLORS[otherUserIdx]
+    );
 
     // this is when we are moving the cursor
     codeEditor.on(
@@ -209,25 +225,19 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     codeSocket.on('codeInsertEvent', (_roomId, index, text) => {
       try {
         contentManager.insert(index, text);
-      } catch {
-        errorInTransmit = true;
-      }
+      } catch {}
     });
 
     codeSocket.on('codeReplaceEvent', (_roomId, index, length, text) => {
       try {
         contentManager.replace(index, length, text);
-      } catch {
-        errorInTransmit = true;
-      }
+      } catch {}
     });
 
     codeSocket.on('codeDeleteEvent', (_roomId, index, length) => {
       try {
         contentManager.delete(index, length);
-      } catch {
-        errorInTransmit = true;
-      }
+      } catch {}
     });
 
     codeSocket.on('joinRoomSuccess', (_username: string) => {
@@ -237,24 +247,10 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       }
     });
 
-    // this is a fallback extra method to send over incase transmit fail. Somehwo it does fail occasional when i am doing testing
-    // codeEditor.on('change', (instance, { origin }) => {
-    //   if (origin !== 'setValue') {
-    //     codeSocket.emit('codeSyncEvent', roomId, instance.getValue());
-    //   }
-    // });
-
     // set value of codeEditor without triggering change
     codeSocket.on('codeSyncEvent', (_roomId, code) => {
-      console.log('codeSyncEvent', code);
       const length = codeEditor.getValue().length;
       contentManager.replace(0, length, code);
-    });
-
-    codeSocket.on('roomLanguageChangeEvent', (_roomId, newLanguage) => {
-      if (language !== newLanguage) {
-        setLanguage(newLanguage);
-      }
     });
 
     return () => {
@@ -264,16 +260,13 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       sourceSelection.dispose();
       contentManager.dispose();
     };
-  }, [codeSocket, roomId, roomUsers, username, otherLabel, language]);
-
-  const handleDisconnect = () => {
-    navigate(RoutePath.HOME);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [codeSocket, roomId, roomUsers, username, otherLabel, language, question]);
 
   return (
     <div className="coding">
       <div className="coding__question prose">
-        <div className="coding__question_header">{`${question?.questionId}. ${question?.title}`}</div>
+        <div className="coding__question_header">{question ? `${question?.questionId}. ${question?.title}` : ''}</div>
         <div className="coding__leetcode_content">{question?.content && parse(question?.content.replace(/&nbsp;/g, ''))}</div>
       </div>
       <div className="divider" />
@@ -307,7 +300,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
           </div>
           <div className="coding__controllers">
             <Button variant="outlined" color="warning" onClick={handleDisconnect}>
-              EXIT
+              END
             </Button>
             <Button variant="contained" onClick={() => {}}>
               RUN
