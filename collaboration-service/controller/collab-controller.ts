@@ -9,6 +9,8 @@ import {
 import { RequestHandler } from 'express';
 import { HttpStatusCode } from '../../common/HttpStatusCodes';
 import sleep from '../../common/utils/sleep';
+import { saveHistory } from '../service/connectHistoryService';
+import QuestionDifficulty from '../../common/QuestionDifficulty';
 
 type IOType = Server<CollabClientToServerEvents, CollabServerToClientEvents, CollabInterServerEvents, CollabSocketData>;
 type SocketType = Socket<CollabClientToServerEvents, CollabServerToClientEvents, CollabInterServerEvents, CollabSocketData>;
@@ -59,6 +61,25 @@ export const exitRoomEvent = (io: IOType, socket: SocketType) => async (roomId: 
   socket.disconnect();
   io.to(roomId).emit('roomUsersChangeEvent', data.users);
 
+  // send data to history service
+  try {
+    const partner = data.users.find((user) => username !== user.username)?.username;
+    if (partner) {
+      await saveHistory(username, {
+        partner,
+        duration: '0',
+        startTime: 1,
+        questionDifficulty: <QuestionDifficulty>data.data.difficulty,
+        questionID: data.data.questionId,
+        questionURL: `https://leetcode.com/problems/${data.data.titleSlug}`,
+        code: data.text,
+        questionName: data.data.title,
+        questionContent: data.data.content,
+        language: data.language,
+      });
+    }
+  } catch {}
+
   await handleRoomDelete(roomId);
 };
 
@@ -82,7 +103,6 @@ export const codeSyncEvent = (socket: SocketType) => async (roomId: string, code
     console.log(`error change text of room ${roomId}`);
     return;
   }
-  socket.to(roomId).emit('codeSyncEvent', roomId, code);
 };
 
 export const roomLanguageChangeEvent = (socket: SocketType) => async (roomId: string, language: string) => {

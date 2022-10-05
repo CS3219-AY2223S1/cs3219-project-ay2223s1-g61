@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import useInterval from 'src/hooks/useInterval';
 
 // Reference page: https://github.com/convergencelabs/codemirror-collab-ext
 // code mirror related. Ignore the types lolol
@@ -43,8 +44,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   const [otherLabel, setOtherLabel] = useState<string>();
   const didUserMoveRef = useRef(false);
   const [question, setQuestion] = useState<QuestionType>();
-  const [language, setLanguage] = useState('');
-  const [initialCode, setInitialCode] = useState('');
+  const [language, setLanguage] = useState('JavaScript');
 
   const getEditorUserConfig = (
     user: TCodeEditorUser,
@@ -59,15 +59,23 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   };
 
   const handleLanguageChange = (event: SelectChangeEvent) => {
-    if (language !== '') {
-      codeSocket?.emit('roomLanguageChangeEvent', roomId, event.target.value);
-    }
+    codeSocket?.emit('roomLanguageChangeEvent', roomId, event.target.value);
     setLanguage(event.target.value);
   };
 
   const handleDisconnect = useCallback(() => {
     navigate(RoutePath.HOME);
   }, [navigate]);
+
+  useEffect(() => {
+    if (editor.current) {
+      editor.current?.setOption('mode', getMode(language));
+      const value = question && getSnippet(question, language)?.code;
+      if (value) {
+        editor.current?.setValue(value);
+      }
+    }
+  }, [language]);
 
   // mounting of socket
   useEffect(() => {
@@ -78,7 +86,9 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
 
     socket.on('connect', () => {
       socket.emit('joinRoomEvent', roomId, username);
-      socket.emit('fetchRoomEvent', roomId);
+      setTimeout(() => {
+        socket.emit('fetchRoomEvent', roomId);
+      }, 50);
       socket.on('joinRoomFailure', handleDisconnect);
 
       socket.on('roomUsersChangeEvent', (users: TUserData[]) => {
@@ -93,11 +103,9 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
           setLanguage(newLanguage);
         }
       });
-      socket.on('codeInitEvent', (code) => setInitialCode(code));
     });
 
     const handleExit = () => {
-      // TODO: Link to History Service (BE) for storage
       socket.emit('exitRoomEvent', roomId, username, editor.current?.getValue());
       socket.close();
     };
@@ -130,7 +138,6 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     });
 
     editor.current = codeEditor;
-    codeEditor.setValue(initialCode || ((question && getSnippet(question, language)?.code) ?? ''));
 
     const cursorManager = new CodeMirrorCollabExt.RemoteCursorManager({
       // @ts-ignore This is likely to be a bug in the @types packages lol
@@ -154,6 +161,10 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       onDelete(index, length) {
         codeSocket.emit('codeDeleteEvent', roomId, index, length);
       },
+    });
+
+    codeSocket.on('codeInitEvent', (code) => {
+      contentManager.replace(0, code.length, code);
     });
 
     const usernameIdx = roomUsers.findIndex((roomUser) => roomUser.username === username);
@@ -240,19 +251,6 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       } catch {}
     });
 
-    codeSocket.on('joinRoomSuccess', (_username: string) => {
-      // sync code when new user join
-      if (_username !== username) {
-        codeSocket.emit('codeSyncEvent', roomId, codeEditor.getValue());
-      }
-    });
-
-    // set value of codeEditor without triggering change
-    codeSocket.on('codeSyncEvent', (_roomId, code) => {
-      const length = codeEditor.getValue().length;
-      contentManager.replace(0, length, code);
-    });
-
     return () => {
       codeEditor.toTextArea();
       // Remove the current client own cursor.
@@ -261,7 +259,13 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       contentManager.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [codeSocket, roomId, roomUsers, username, otherLabel, language, question]);
+  }, [codeSocket, roomId, roomUsers, username, otherLabel]);
+
+  useInterval(() => {
+    if (codeSocket && editor.current && (roomUsers.length === 1 || roomUsers[0].username === username)) {
+      codeSocket.emit('codeSyncEvent', roomId, editor.current.getValue());
+    }
+  }, 1000);
 
   return (
     <div className="coding">
@@ -299,11 +303,8 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
             })}
           </div>
           <div className="coding__controllers">
-            <Button variant="outlined" color="warning" onClick={handleDisconnect}>
-              END
-            </Button>
-            <Button variant="contained" onClick={() => {}}>
-              RUN
+            <Button variant="contained" onClick={handleDisconnect}>
+              END SESSION
             </Button>
           </div>
         </div>

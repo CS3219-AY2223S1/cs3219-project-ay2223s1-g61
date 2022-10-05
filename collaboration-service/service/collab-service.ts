@@ -1,7 +1,7 @@
 import RedisClient from '../db';
 import { TRoomData, TUserData } from '../../common/collaboration-service/socket-io-types';
 import QuestionDifficulty from '../../common/QuestionDifficulty';
-import { getRoomQuestion } from './question-service';
+import { getRoomQuestion } from './connectQuestionService';
 
 const getFromRedis = async (key: string): Promise<TRoomData | null> => {
   const data = await RedisClient.get(key);
@@ -37,7 +37,7 @@ export const createRoom = async (roomId: string, usernames: string[], difficulty
     const { data } = await getRoomQuestion(difficulty);
     const room: TRoomData = {
       users: usernames.map((u) => createRoomUser(u)),
-      text: '',
+      text: data.data.codeSnippets.filter((codeSnippet) => codeSnippet.lang === 'JavaScript')[0].code,
       data: data.data,
       language: 'JavaScript',
     };
