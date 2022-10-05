@@ -1,30 +1,32 @@
 import { io, Socket } from 'socket.io-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CollabClientToServerEvents, CollabServerToClientEvents, QuestionType, TUserData } from 'src/types';
 import { useNavigate } from 'react-router-dom';
 import { RoutePath } from 'src/services/RoutingService';
-import { COLORS, sourceUser, partnerUser, TCodeEditorUser } from './constants';
 import { getMode, languages, getSnippet } from './utils';
 import { throttle } from 'throttle-typescript';
 import parse from 'html-react-parser';
+import useInterval from 'src/hooks/useInterval';
+
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import useInterval from 'src/hooks/useInterval';
 
 // Reference page: https://github.com/convergencelabs/codemirror-collab-ext
 // code mirror related. Ignore the types lolol
 import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/material-palenight.css';
+import 'codemirror/mode/clike/clike';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/python/python';
-import 'codemirror/mode/clike/clike';
 import 'codemirror/keymap/sublime';
 import 'codemirror/addon/comment/comment';
 import '@convergencelabs/codemirror-collab-ext/css/codemirror-collab-ext.css';
 import * as CodeMirrorCollabExt from '@convergencelabs/codemirror-collab-ext';
+
+import { COLORS, sourceUser, partnerUser, TCodeEditorUser } from './constants';
+import type { CollabClientToServerEvents, CollabServerToClientEvents, QuestionType, TUserData } from 'src/types';
 
 import './index.scss';
 import './tailwindProse.scss';
@@ -77,7 +79,6 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     }
   }, [language]);
 
-  // mounting of socket
   useEffect(() => {
     const socket: TSocket = io('http://localhost:8002', {
       closeOnBeforeunload: false,
@@ -121,7 +122,6 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, username, handleDisconnect]);
 
-  // mounting of editor
   useEffect(() => {
     const editorHTML = document.getElementById('editor') as HTMLTextAreaElement;
     if (editorHTML == null || codeSocket == null || otherLabel == null) {
