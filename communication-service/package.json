@@ -1,0 +1,16 @@
+{
+  "name": "communication-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "nodemon index.ts",
+    "start": "node index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "./node_modules/.bin/tsc -w"
+  },
+  "dependencies": {
+    "nodemon": "^2.0.20",
+    "peer": "^0.6.1"
+  }
+}
