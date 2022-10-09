@@ -49,6 +49,7 @@ const ChatBox = (props: ChatBoxProps) => {
         onClick={() => {
           if (dataConnection) {
             if (dataConnection.open) {
+              setMsgLst((prev) => [...prev, { msg: draftMsg, username: username }]);
               dataConnection.send({ msg: draftMsg, username: username });
             } else {
               console.log('Connection not open');
