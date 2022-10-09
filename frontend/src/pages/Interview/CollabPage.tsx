@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoutePath } from 'src/services/RoutingService';
 import { getMode, languages, getSnippet } from './utils';
@@ -30,24 +30,32 @@ import type { CollabClientToServerEvents, CollabServerToClientEvents, QuestionTy
 
 import './index.scss';
 import './tailwindProse.scss';
+import Peer, { DataConnection } from 'peerjs';
+import usePeer from 'src/hooks/usePeer';
+import TextField from '@mui/material/TextField';
+import ChatBox from 'src/components/ChatBox';
+import VideoCall from 'src/components/VideoCall';
 
 type CollabPageProps = {
   roomId: string;
   username: string;
 };
 
-type TSocket = Socket<CollabServerToClientEvents, CollabClientToServerEvents>;
+type TCollabSocket = Socket<CollabServerToClientEvents, CollabClientToServerEvents>;
 
 export default function CollabPage({ roomId, username }: CollabPageProps) {
-  const [roomUsers, setRoomUsers] = useState<TUserData[]>([]);
   const navigate = useNavigate();
-  const [codeSocket, setCodeSocket] = useState<TSocket>();
-  const editor = useRef<CodeMirror.Editor>();
+  const [roomUsers, setRoomUsers] = useState<TUserData[]>([]);
+  const [codeSocket, setCodeSocket] = useState<TCollabSocket>();
   const editorHtml = useRef<HTMLTextAreaElement>(null);
   const [otherLabel, setOtherLabel] = useState<string>();
-  const didUserMoveRef = useRef(false);
   const [question, setQuestion] = useState<QuestionType>();
   const [language, setLanguage] = useState('JavaScript');
+  const didUserMoveRef = useRef(false);
+  const editor = useRef<CodeMirror.Editor>();
+  const videoRef = useRef(null);
+
+  const { dataConnection, mediaConnection, dialIn, leaveCall } = usePeer(roomId);
 
   const getEditorUserConfig = (
     user: TCodeEditorUser,
@@ -83,7 +91,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   }, [language]);
 
   useEffect(() => {
-    const socket: TSocket = io('http://localhost:8002', {
+    const socket: TCollabSocket = io('http://localhost:8002', {
       closeOnBeforeunload: false,
     });
     setCodeSocket(socket);
@@ -284,6 +292,12 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
         <div className="coding__question_header">{question ? `${question?.questionId}. ${question?.title}` : ''}</div>
         <div className="coding__leetcode_content">{question?.content && parse(question?.content.replace(/&nbsp;/g, ''))}</div>
       </div>
+      {dataConnection && dialIn && leaveCall && (
+        <div>
+          <VideoCall mediaConnection={mediaConnection} dialIn={dialIn} leaveCall={leaveCall} />
+          <ChatBox username={username} dataConnection={dataConnection} />
+        </div>
+      )}
       <div className="divider" />
       <div className="coding__right">
         <div className="coding__language_option">
