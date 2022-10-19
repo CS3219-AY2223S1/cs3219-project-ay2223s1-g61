@@ -49,7 +49,8 @@
   flex: 1;
 
   & .coding__question {
-    width: min(1100px, 70%);
+    height: 100%;
+    width: min(1100px, 100%);
     padding: 20px;
     overflow-y: auto;
 

@@ -84,6 +84,7 @@ export type TUserData = {
   username: string;
   peerId: string;
   connected: boolean;
+  color: string;
 };
 
 export type HistoryData = {

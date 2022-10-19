@@ -8,9 +8,7 @@ export type VideoCallProps = {
   leaveCall: () => void;
 };
 
-const VideoCall = (props: VideoCallProps) => {
-  console.log('Rendering VideoCallComponent');
-
+const VideoCall = ({ mediaConnection, dialIn, leaveCall }: VideoCallProps) => {
   const myVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -20,7 +18,7 @@ const VideoCall = (props: VideoCallProps) => {
     });
     return call;
   };
-  const { mediaConnection, dialIn, leaveCall } = props;
+
   useEffect(() => {
     if (!mediaConnection) return;
     attachMediaConnectionListeners(mediaConnection);
@@ -48,10 +46,14 @@ const VideoCall = (props: VideoCallProps) => {
   };
   return (
     <div>
-      <Button style={{ color: '#00FF00' }} size="large" title="Start Call" onClick={handleCall} />
+      <Button style={{ color: '#00FF00' }} size="large" onClick={handleCall}>
+        Start Call
+      </Button>
       <video ref={myVideoRef} autoPlay muted />
       <video ref={remoteVideoRef} autoPlay />
-      <Button style={{ color: '#FF0000' }} title="End Call" onClick={handleLeave} />
+      <Button style={{ color: '#FF0000' }} onClick={handleLeave}>
+        End Call
+      </Button>
     </div>
   );
 };

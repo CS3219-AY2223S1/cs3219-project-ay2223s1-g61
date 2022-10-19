@@ -19,40 +19,43 @@ const usePeer = (roomId: string) => {
     });
     const myPeer = new Peer({ debug: 2 });
 
-    myPeer.on('open', (id) => {
-      console.log('Connected to PeerServer with id', id);
-      socket.emit('joinRoomEvent', roomId, id);
-    });
-    myPeer.on('connection', (conn) => {
-      // Client that received the connection will have this connection object
-      setDataConnection(conn);
-    });
-    myPeer.on('disconnected', () => {
-      console.log('Connection lost. Reconnecting...');
-      myPeer.reconnect();
-    });
-    myPeer.on('close', () => {
-      console.log('Connection closed');
-    });
-    myPeer.on('error', (err) => {
-      console.log(err);
-      alert('' + err);
-    });
+    // i think if we dont wait for on connect we might run in race condition
+    socket.on('connect', () => {
+      myPeer.on('open', (id) => {
+        console.log('Connected to PeerServer with id', id);
+        socket.emit('joinRoomEvent', roomId, id);
+      });
+      myPeer.on('connection', (conn) => {
+        // Client that received the connection will have this connection object
+        setDataConnection(conn);
+      });
+      myPeer.on('disconnected', () => {
+        console.log('Connection lost. Reconnecting...');
+        myPeer.reconnect();
+      });
+      myPeer.on('close', () => {
+        console.log('Connection closed');
+      });
+      myPeer.on('error', (err) => {
+        console.log(err);
+        alert('' + err);
+      });
 
-    socket.on('peerConnected', (remotePeerId: string) => {
-      console.log(remotePeerId, 'connected to room');
-      const conn = myPeer.connect(remotePeerId);
-      // Client that initiated connection will have this connection object
-      setDataConnection(conn);
-    });
-    socket.on('peerDisconnected', (remotePeerId: string) => {
-      console.log(remotePeerId, 'disconnected from room');
-      dataConnection?.close();
-      mediaConnection?.close();
-    });
-    socket.on('peerCallDisconnected', (remotePeerId: string) => {
-      console.log(remotePeerId, 'disconnected from call');
-      mediaConnection?.close();
+      socket.on('peerConnected', (remotePeerId: string) => {
+        console.log(remotePeerId, 'connected to room');
+        const conn = myPeer.connect(remotePeerId);
+        // Client that initiated connection will have this connection object
+        setDataConnection(conn);
+      });
+      socket.on('peerDisconnected', (remotePeerId: string) => {
+        console.log(remotePeerId, 'disconnected from room');
+        dataConnection?.close();
+        mediaConnection?.close();
+      });
+      socket.on('peerCallDisconnected', (remotePeerId: string) => {
+        console.log(remotePeerId, 'disconnected from call');
+        mediaConnection?.close();
+      });
     });
 
     setDialIn(() => (userMediaPromise: Promise<MediaStream>) => {

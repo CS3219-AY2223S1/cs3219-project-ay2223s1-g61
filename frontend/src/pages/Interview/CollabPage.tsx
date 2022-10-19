@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoutePath } from 'src/services/RoutingService';
 import { getMode, languages, getSnippet } from './utils';
@@ -25,16 +25,17 @@ import 'codemirror/addon/comment/comment';
 import '@convergencelabs/codemirror-collab-ext/css/codemirror-collab-ext.css';
 import * as CodeMirrorCollabExt from '@convergencelabs/codemirror-collab-ext';
 
-import { COLORS, sourceUser, partnerUser, TCodeEditorUser } from './constants';
+import { sourceUser, partnerUser, TCodeEditorUser } from './constants';
 import type { CollabClientToServerEvents, CollabServerToClientEvents, QuestionType, TUserData } from 'src/types';
 
+import usePeer from 'src/hooks/usePeer';
+import ChatBox from 'src/components/Chatbox/ChatBox';
+import VideoCall from 'src/components/VideoCall';
+import { Allotment } from 'allotment';
+
+import 'allotment/dist/style.css';
 import './index.scss';
 import './tailwindProse.scss';
-import Peer, { DataConnection } from 'peerjs';
-import usePeer from 'src/hooks/usePeer';
-import TextField from '@mui/material/TextField';
-import ChatBox from 'src/components/ChatBox';
-import VideoCall from 'src/components/VideoCall';
 
 type CollabPageProps = {
   roomId: string;
@@ -193,14 +194,14 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
       username,
       cursorManager,
       selectionManager,
-      COLORS[usernameIdx]
+      roomUsers[usernameIdx].color
     );
     const { cursor: partnerCursor, selection: partnerSelection } = getEditorUserConfig(
       partnerUser,
       otherLabel,
       cursorManager,
       selectionManager,
-      COLORS[otherUserIdx]
+      roomUsers[otherUserIdx].color
     );
 
     // this is when we are moving the cursor
@@ -286,18 +287,22 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     }
   }, 1500);
 
+  const isConnected = dataConnection && dialIn && leaveCall;
+
   return (
     <div className="coding">
-      <div className="coding__question prose">
-        <div className="coding__question_header">{question ? `${question?.questionId}. ${question?.title}` : ''}</div>
-        <div className="coding__leetcode_content">{question?.content && parse(question?.content.replace(/&nbsp;/g, ''))}</div>
-      </div>
-      {dataConnection && dialIn && leaveCall && (
+      <Allotment vertical={true} defaultSizes={[50, 50]}>
+        <div className="coding__question prose">
+          <div className="coding__question_header">{question ? `${question?.questionId}. ${question?.title}` : ''}</div>
+          <div className="coding__leetcode_content">{question?.content && parse(question?.content.replace(/&nbsp;/g, ''))}</div>
+        </div>
+        {isConnected && <ChatBox username={username} dataConnection={dataConnection} roomUsers={roomUsers} />}
+      </Allotment>
+      {/* {isConnected && (
         <div>
           <VideoCall mediaConnection={mediaConnection} dialIn={dialIn} leaveCall={leaveCall} />
-          <ChatBox username={username} dataConnection={dataConnection} />
         </div>
-      )}
+      )} */}
       <div className="divider" />
       <div className="coding__right">
         <div className="coding__language_option">
@@ -317,11 +322,11 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
         </div>
         <div className="coding__bottom_tab">
           <div className="coding__users">
-            {roomUsers.map(({ username, connected }, index) => {
+            {roomUsers.map(({ username, connected, color }) => {
               if (!connected) return <></>;
               return (
                 <div key={username}>
-                  <div className="coding__user__ball" style={{ backgroundColor: COLORS[index] }} />
+                  <div className="coding__user__ball" style={{ backgroundColor: color }} />
                   <div className="coding__user__name">{username}</div>
                 </div>
               );
