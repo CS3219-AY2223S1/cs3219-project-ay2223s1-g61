@@ -97,6 +97,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   const handleDisconnect = useCallback(() => {
     leaveCallVideo();
     navigate(RoutePath.HOME);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   useEffect(() => {
@@ -107,6 +108,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     return () => {
       subscriber.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -314,6 +316,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   useEffect(() => {
     if (!mediaConnection) return;
     attachMediaConnectionListeners(mediaConnection, remoteVideoRef.current!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaConnection]);
 
   useInterval(() => {

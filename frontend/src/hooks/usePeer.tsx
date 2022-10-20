@@ -96,6 +96,7 @@ const usePeer = (roomId: string) => {
       // triggered when leaving page
       closeConnection();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { dataConnection, mediaConnection, leaveCall, dialIn };
 };
