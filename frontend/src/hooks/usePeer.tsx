@@ -2,6 +2,7 @@ import Peer, { DataConnection, MediaConnection } from 'peerjs';
 import { useEffect, useState } from 'react';
 import { Socket, io } from 'socket.io-client';
 import { CommsServerToClientEvents, CommsClientToServerEvents } from 'src/types';
+import videoObserver from 'src/observer/VideoObserver';
 
 type TCommsSocket = Socket<CommsServerToClientEvents, CommsClientToServerEvents>;
 
@@ -54,6 +55,7 @@ const usePeer = (roomId: string) => {
       });
       socket.on('peerCallDisconnected', (remotePeerId: string) => {
         console.log(remotePeerId, 'disconnected from call');
+        videoObserver.publish('partnerCloseCall');
         mediaConnection?.close();
       });
     });
@@ -74,10 +76,10 @@ const usePeer = (roomId: string) => {
           setMediaConnection(call);
         });
       });
-      socket.emit('joinCallRoomEvent', myPeer.id);
+      socket.emit('joinCallRoomEvent', roomId, myPeer.id);
     });
 
-    setLeaveCall(() => () => socket.emit('leaveCallRoomEvent', myPeer.id));
+    setLeaveCall(() => () => socket.emit('leaveCallRoomEvent', roomId, myPeer.id));
 
     const closeConnection = () => {
       socket.close();

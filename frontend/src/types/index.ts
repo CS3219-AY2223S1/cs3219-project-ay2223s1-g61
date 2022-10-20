@@ -61,8 +61,8 @@ export interface CollabServerToClientEvents {
 
 export interface CommsClientToServerEvents {
   joinRoomEvent: (roomId: string, peerId: string) => void;
-  joinCallRoomEvent: (peerId: string) => void;
-  leaveCallRoomEvent: (peerId: string) => void;
+  joinCallRoomEvent: (roomId: string, peerId: string) => void;
+  leaveCallRoomEvent: (roomId: string, peerId: string) => void;
 }
 export interface CommsServerToClientEvents {
   peerConnected: (peerId: string) => void;

@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
 
 // Reference page: https://github.com/convergencelabs/codemirror-collab-ext
 // code mirror related. Ignore the types lolol
@@ -30,8 +31,11 @@ import type { CollabClientToServerEvents, CollabServerToClientEvents, QuestionTy
 
 import usePeer from 'src/hooks/usePeer';
 import ChatBox from 'src/components/Chatbox/ChatBox';
-import VideoCall from 'src/components/VideoCall';
+import useVideo from 'src/hooks/useVideo';
+import Draggable from 'react-draggable';
 import { Allotment } from 'allotment';
+
+import videoObserver from 'src/observer/VideoObserver';
 
 import 'allotment/dist/style.css';
 import './index.scss';
@@ -54,9 +58,14 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   const [language, setLanguage] = useState('JavaScript');
   const didUserMoveRef = useRef(false);
   const editor = useRef<CodeMirror.Editor>();
-  const videoRef = useRef(null);
+  const myVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  const [isOpenVideo, setIsOpenVideo] = useState(false);
+  const [isMinimizeVideo, setIsMinimizedVideo] = useState(false);
 
   const { dataConnection, mediaConnection, dialIn, leaveCall } = usePeer(roomId);
+  const { attachMediaConnectionListeners, handleCall, handleLeave, removeVideoStream } = useVideo(dialIn, leaveCall);
 
   const getEditorUserConfig = (
     user: TCodeEditorUser,
@@ -75,9 +84,30 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     setLanguage(event.target.value);
   };
 
+  const leaveCallVideo = () => {
+    handleLeave(myVideoRef.current!);
+    setIsOpenVideo(false);
+  };
+
+  const openCallVideo = () => {
+    handleCall(myVideoRef.current!);
+    setIsOpenVideo(true);
+  };
+
   const handleDisconnect = useCallback(() => {
+    leaveCallVideo();
     navigate(RoutePath.HOME);
   }, [navigate]);
+
+  useEffect(() => {
+    const subscriber = videoObserver.subscribe('partnerCloseCall', () => {
+      removeVideoStream(remoteVideoRef.current!);
+    });
+
+    return () => {
+      subscriber.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (editor.current) {
@@ -281,6 +311,11 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codeSocket, roomId, roomUsers, username, otherLabel]);
 
+  useEffect(() => {
+    if (!mediaConnection) return;
+    attachMediaConnectionListeners(mediaConnection, remoteVideoRef.current!);
+  }, [mediaConnection]);
+
   useInterval(() => {
     if (codeSocket && editor.current) {
       codeSocket.emit('codeSyncEvent', roomId, editor.current.getValue());
@@ -290,55 +325,72 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   const isConnected = dataConnection && dialIn && leaveCall;
 
   return (
-    <div className="coding">
-      <Allotment vertical={true} defaultSizes={[50, 50]}>
-        <div className="coding__question prose">
-          <div className="coding__question_header">{question ? `${question?.questionId}. ${question?.title}` : ''}</div>
-          <div className="coding__leetcode_content">{question?.content && parse(question?.content.replace(/&nbsp;/g, ''))}</div>
-        </div>
-        {isConnected && <ChatBox username={username} dataConnection={dataConnection} roomUsers={roomUsers} />}
-      </Allotment>
-      {/* {isConnected && (
+    <>
+      <div className="coding">
+        <Allotment vertical={true} defaultSizes={[50, 50]}>
+          <div className="coding__question prose">
+            <div className="coding__question_header">{question ? `${question?.title}` : ''}</div>
+            <div className="coding__leetcode_content">{question?.content && parse(question?.content.replace(/&nbsp;/g, ''))}</div>
+          </div>
+          {isConnected && <ChatBox username={username} dataConnection={dataConnection} roomUsers={roomUsers} />}
+        </Allotment>
+        {/* {isConnected && (
         <div>
           <VideoCall mediaConnection={mediaConnection} dialIn={dialIn} leaveCall={leaveCall} />
         </div>
       )} */}
-      <div className="divider" />
-      <div className="coding__right">
-        <div className="coding__language_option">
-          <div>Language: </div>
-          <FormControl sx={{ m: 1, minWidth: 120, maxWidth: 240 }} size="small" color="secondary">
-            <Select value={language} onChange={handleLanguageChange} displayEmpty>
-              {languages.map((language) => (
-                <MenuItem value={language} key={language}>
-                  {language}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-        <div className="editor__container">
-          <textarea ref={editorHtml} id="editor" />
-        </div>
-        <div className="coding__bottom_tab">
-          <div className="coding__users">
-            {roomUsers.map(({ username, connected, color }) => {
-              if (!connected) return <></>;
-              return (
-                <div key={username}>
-                  <div className="coding__user__ball" style={{ backgroundColor: color }} />
-                  <div className="coding__user__name">{username}</div>
-                </div>
-              );
-            })}
+        <div className="divider" />
+        <div className="coding__right">
+          <div className="coding__language_option">
+            <div>Language: </div>
+            <FormControl sx={{ m: 1, minWidth: 120, maxWidth: 240 }} size="small" color="secondary">
+              <Select value={language} onChange={handleLanguageChange} displayEmpty>
+                {languages.map((language) => (
+                  <MenuItem value={language} key={language}>
+                    {language}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </div>
-          <div className="coding__controllers">
-            <Button variant="contained" onClick={handleDisconnect}>
-              END SESSION
-            </Button>
+          <div className="editor__container">
+            <textarea ref={editorHtml} id="editor" />
+          </div>
+          <div className="coding__bottom_tab">
+            <div className="coding__users">
+              {roomUsers.map(({ username, connected, color }) => {
+                if (!connected) return <></>;
+                return (
+                  <div key={username}>
+                    <div className="coding__user__ball" style={{ backgroundColor: color }} />
+                    <div className="coding__user__name">{username}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="coding__controllers">
+              <Button variant="outlined" color="error" onClick={leaveCallVideo}>
+                Leave Call
+              </Button>
+              <Button variant="contained" color="success" onClick={openCallVideo}>
+                Join Call
+              </Button>
+              <Button variant="contained" onClick={handleDisconnect}>
+                END SESSION
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <Draggable bounds="body" defaultClassName={!isOpenVideo ? 'magicHidden' : ''}>
+        <div className="videoCall">
+          <div className="videoCallTools">
+            <RemoveRoundedIcon style={{ cursor: 'pointer' }} onClick={() => setIsMinimizedVideo((minVideo) => !minVideo)} />
+          </div>
+          <video ref={myVideoRef} autoPlay muted className={`${isMinimizeVideo ? 'magicHidden' : ''} videoFrame`} />
+          <video ref={remoteVideoRef} autoPlay className={`${isMinimizeVideo ? 'magicHidden' : ''} videoFrame`} />
+        </div>
+      </Draggable>
+    </>
   );
 }
