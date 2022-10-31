@@ -345,11 +345,6 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
           </div>
           {isConnected && <ChatBox username={username} dataConnection={dataConnection} roomUsers={roomUsers} />}
         </Allotment>
-        {/* {isConnected && (
-        <div>
-          <VideoCall mediaConnection={mediaConnection} dialIn={dialIn} leaveCall={leaveCall} />
-        </div>
-      )} */}
         <div className="divider" />
         <div className="coding__right">
           <div className="coding__language_option">
