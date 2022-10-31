@@ -1,14 +1,18 @@
-import { MediaConnection } from 'peerjs';
+// import { MediaConnection } from 'peerjs';
 
 type TDialIn = ((userMediaPromise: Promise<MediaStream>) => void) | undefined;
 type TLeaveCall = (() => void) | undefined;
 
 const useVideo = (dialIn: TDialIn, leaveCall: TLeaveCall) => {
-  const attachMediaConnectionListeners = (call: MediaConnection, remoteVideo: HTMLVideoElement): MediaConnection => {
-    call.on('stream', (remoteStream) => {
-      remoteVideo.srcObject = remoteStream; // Note: Requires video components to be mounted already (in DOM)
-    });
-    return call;
+  // const attachMediaConnectionListeners = (call: MediaConnection, remoteVideo: HTMLVideoElement): MediaConnection => {
+  //   call.on('stream', (remoteStream) => {
+  //     remoteVideo.srcObject = remoteStream; // Note: Requires video components to be mounted already (in DOM)
+  //   });
+  //   return call;
+  // };
+
+  const addVideoStream = (video: HTMLVideoElement, remoteStream: MediaStream) => {
+    video.srcObject = remoteStream;
   };
 
   const removeVideoStream = (video: HTMLVideoElement) => {
@@ -39,7 +43,7 @@ const useVideo = (dialIn: TDialIn, leaveCall: TLeaveCall) => {
     leaveCall?.();
   };
 
-  return { attachMediaConnectionListeners, handleCall, handleLeave, removeVideoStream };
+  return { handleCall, handleLeave, removeVideoStream, addVideoStream };
 };
 
 export default useVideo;

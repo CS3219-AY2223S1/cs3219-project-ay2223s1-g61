@@ -69,6 +69,7 @@ const usePeer = (roomId: string) => {
           call.answer(mediaStream);
         });
         setMediaConnection(call);
+        call.on('stream', (remoteStream) => videoObserver.publish('partnerOpenVideo', remoteStream));
       });
       socket.on('peerCallConnected', (peerId: string) => {
         userMediaPromise.then((mediaStream) => {
@@ -76,6 +77,7 @@ const usePeer = (roomId: string) => {
           const call = myPeer.call(peerId, mediaStream);
           // Client that initiated connection will have this connection object
           setMediaConnection(call);
+          call.on('stream', (remoteStream) => videoObserver.publish('partnerOpenVideo', remoteStream));
         });
       });
       socket.emit('joinCallRoomEvent', roomId, myPeer.id);
