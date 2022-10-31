@@ -1,5 +1,3 @@
-// import { MediaConnection } from 'peerjs';
-
 type TDialIn = ((userMediaPromise: Promise<MediaStream>) => void) | undefined;
 type TLeaveCall = (() => void) | undefined;
 
