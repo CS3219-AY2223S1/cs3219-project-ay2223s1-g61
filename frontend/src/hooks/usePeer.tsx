@@ -87,7 +87,13 @@ const usePeer = (roomId: string) => {
       socket.emit('joinCallRoomEvent', roomId, myPeer.id);
     });
 
-    setLeaveCall(() => () => socket.emit('leaveCallRoomEvent', roomId, myPeer.id));
+    setLeaveCall(() => () => {
+      setMediaConnection((prev) => {
+        prev?.close();
+        return prev;
+      });
+      socket.emit('leaveCallRoomEvent', roomId, myPeer.id);
+    });
 
     const closeConnection = () => {
       socket.close();
