@@ -65,7 +65,7 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
   const [isOpenVideo, setIsOpenVideo] = useState(false);
   const [isMinimizeVideo, setIsMinimizedVideo] = useState(false);
 
-  const { dataConnection, mediaConnection, dialIn, leaveCall } = usePeer(roomId);
+  const { dataConnection, dialIn, leaveCall } = usePeer(roomId);
   const { handleCall, handleLeave, removeVideoStream, addVideoStream } = useVideo(dialIn, leaveCall);
 
   const getEditorUserConfig = (
@@ -321,12 +321,6 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codeSocket, roomId, roomUsers, username, otherLabel]);
 
-  // useEffect(() => {
-  //   if (!mediaConnection) return;
-  //   attachMediaConnectionListeners(mediaConnection, remoteVideoRef.current!);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [mediaConnection]);
-
   useInterval(() => {
     if (codeSocket && editor.current) {
       codeSocket.emit('codeSyncEvent', roomId, editor.current.getValue());
@@ -345,11 +339,6 @@ export default function CollabPage({ roomId, username }: CollabPageProps) {
           </div>
           {isConnected && <ChatBox username={username} dataConnection={dataConnection} roomUsers={roomUsers} />}
         </Allotment>
-        {/* {isConnected && (
-        <div>
-          <VideoCall mediaConnection={mediaConnection} dialIn={dialIn} leaveCall={leaveCall} />
-        </div>
-      )} */}
         <div className="divider" />
         <div className="coding__right">
           <div className="coding__language_option">

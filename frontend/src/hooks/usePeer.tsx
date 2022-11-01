@@ -58,14 +58,18 @@ const usePeer = (roomId: string) => {
       socket.on('peerCallDisconnected', (remotePeerId: string) => {
         console.log(remotePeerId, 'disconnected from call');
         videoObserver.publish('partnerCloseCall');
-        mediaConnection?.close();
+        // mediaConnection?.close();
       });
     });
 
-    setDialIn(() => (userMediaPromise: Promise<MediaStream>) => {
+    setDialIn((_: any) => (userMediaPromise: Promise<MediaStream>) => {
       myPeer.on('call', (call) => {
         userMediaPromise.then((mediaStream) => {
           // Answer the call, providing our mediaStream
+          if (call.peerConnection) {
+            call.peerConnection.getSenders()[0].replaceTrack(mediaStream.getTracks()[0]);
+            call.peerConnection.getSenders()[1].replaceTrack(mediaStream.getTracks()[1]);
+          }
           call.answer(mediaStream);
         });
         setMediaConnection(call);
