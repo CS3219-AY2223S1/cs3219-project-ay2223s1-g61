@@ -1,0 +1,66 @@
+.signUpPage {
+  background-color: #121826;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 7vw;
+  height: fit-content;
+  align-items: center;
+}
+
+.left {
+  display: flex;
+  position: relative;
+  top: 50%;
+}
+
+.container .product {
+  height: auto;
+}
+
+.product.one {
+  flex: 3;
+  height: fit-content;
+  margin-bottom: 20px;
+}
+
+.product.two {
+  flex: 8;
+  min-width: 500px;
+}
+
+.right {
+  display: flex;
+  position: relative;
+}
+
+#sample-pic {
+  width: 100%;
+  border-radius: 20px;
+}
+
+.text.title {
+  font-size: 40px;
+  font-weight: 700;
+  padding-bottom: 26px;
+}
+
+.text.subtext {
+  font-weight: 300;
+  font-size: 24px;
+  padding-bottom: 22px;
+}
+
+Button.btn {
+  background-color: #474dd9;
+  color: white;
+  font-size: 11px;
+  padding: 12px 28px;
+  margin-right: 20px;
+}
